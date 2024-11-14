@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import pandas  as pd
+import sqlite3
 
 def fetch_page():
     url = "https://www.mercadolivre.com.br/apple-iphone-16-pro-max-1-tb-titnio-preto-distribuidor-autorizado/p/MLB1040287854#polycard_client=search-nordic&wid=MLB5093482120&sid=search&searchVariation=MLB1040287854&position=8&search_layout=stack&type=product&tracking_id=1c14efda-e073-476c-b8fc-0b889df5a121"
@@ -23,26 +24,50 @@ def parse_page(html):
     
     'product_name': product_name,
     'old_price': old_price,
-    'new_prince': new_prince,
-    'installment_prince': installment_prince,
+    'new_price': new_prince,
+    'installment_price': installment_prince,
     'timestamp': timestamp
 
    }
-    
-def save_to_dataframe(product_inf, df):
+
+def create_connection(db_name='iphone_prices.db'):
+    """Cria uma conexão com o banco de dados SQLite."""
+    conn = sqlite3.connect(db_name)
+    return conn
+
+def setup_database(conn):
+    """Cria a tabela de preços se ela não existir."""
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS prices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_name TEXT,
+            old_price INTEGER,
+            new_price INTEGER,
+            installment_price INTEGER,
+            timestamp TEXT
+        )
+    ''')
+    conn.commit()
+
+
+def save_to_database(conn, product_inf):
     new_row = pd.DataFrame([product_inf])
-    df = pd.concat([df, new_row], ignore_index=True)
-    return df
+    new_row.to_sql('prices', conn, if_exists='append', index=False)
+    
 
 if __name__ == "__main__": 
-
-    df = pd.DataFrame()
+    conn = create_connection()
+    setup_database(conn)
+    
 
     while True:
         page_content = fetch_page()
         produto_inf = parse_page(page_content)
-        df = save_to_dataframe(produto_inf, df)
-        print(df)
+        save_to_database(conn, produto_inf)
+        print("Dados salvos do banco de dados: ", produto_inf)
         time.sleep(10)
     #print(page_content)
+   
+   
     
