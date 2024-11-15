@@ -77,6 +77,10 @@ def get_max_price(conn):
     return result[0], result[1]
     
 
+def sent_telegram_messagem(text):
+    bot.send_message(chat_id=CHAT_ID, text=text)
+
+
 if __name__ == "__main__": 
     conn = create_connection()
     setup_database(conn)
@@ -94,14 +98,17 @@ if __name__ == "__main__":
         max_price_timestamp = None
 
         if current_price > max_price:
-            print("Preço maior detectado")
+            print(f"Preço maior detectado {current_price}")
+            sent_telegram_messagem(f"Preço maior detectado {current_price}")
             max_price = current_price
             max_price_timestamp = produto_inf('timestamp')
         else: 
             print(f"O maior preço registrado é {max_price} em {max_price_timestamp}")
+            sent_telegram_messagem(f"O maior preço registrado é {max_price} em {max_price_timestamp}")
 
         save_to_database(conn, produto_inf)
         print("Dados salvos do banco de dados: ", produto_inf)
+        
         time.sleep(10)
     #print(page_content)
    
